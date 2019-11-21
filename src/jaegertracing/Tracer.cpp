@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "jaegertracing/Tag.h"
 #include "jaegertracing/Tracer.h"
 #include "jaegertracing/Reference.h"
+#include "jaegertracing/Tag.h"
 #include "jaegertracing/TraceID.h"
 #include "jaegertracing/samplers/SamplingStatus.h"
 #include <algorithm>
@@ -69,6 +69,8 @@ Tracer::StartSpanWithOptions(string_view operationName,
         const auto* parent = result._parent;
         const auto& references = result._references;
 
+        _logger->error("howdy start span with options");
+
         std::vector<Tag> samplerTags;
         auto newTrace = false;
         SpanContext ctx;
@@ -83,10 +85,12 @@ Tracer::StartSpanWithOptions(string_view operationName,
             const auto parentID = 0;
             auto flags = static_cast<unsigned char>(0);
             if (parent && parent->isDebugIDContainerOnly()) {
+                _logger->error("should have a debug id");
                 flags |=
                     (static_cast<unsigned char>(SpanContext::Flag::kSampled) |
                      static_cast<unsigned char>(SpanContext::Flag::kDebug));
-                samplerTags.push_back(Tag(kJaegerDebugHeader, parent->debugID()));
+                samplerTags.push_back(
+                    Tag(kJaegerDebugHeader, parent->debugID()));
             }
             else {
                 const auto samplingStatus =
@@ -124,8 +128,8 @@ Tracer::StartSpanWithOptions(string_view operationName,
                                  newTrace,
                                  references);
     } catch (...) {
-        utils::ErrorUtil::logError(
-            *_logger, "Error occurred in Tracer::StartSpanWithOptions");
+        utils::errorutil::logerror(
+            *_logger, "error occurred in tracer::startspanwithoptions");
         return nullptr;
     }
 }
@@ -218,9 +222,10 @@ Tracer::analyzeReferences(const std::vector<OpenTracingRef>& references) const
 
 std::shared_ptr<opentracing::Tracer>
 Tracer::make(const std::string& serviceName,
-                   const Config& config,
-     const std::shared_ptr<logging::Logger>& logger,
-     metrics::StatsFactory& statsFactory, int options)
+             const Config& config,
+             const std::shared_ptr<logging::Logger>& logger,
+             metrics::StatsFactory& statsFactory,
+             int options)
 {
     if (serviceName.empty()) {
         throw std::invalid_argument("no service name provided");
